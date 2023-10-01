@@ -1,5 +1,76 @@
 let responseData;
 
+function init () {
+    // https://stackoverflow.com/questions/22325819/d3-js-get-json-from-url
+    d3.json("https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/14-Interactive-Web-Visualizations/02-Homework/samples.json").then(response => {
+        
+        console.log(response);
+        responseData = response;
+
+        // populate dropdown
+        var select = document.getElementById("selDataset");
+        for(index in response.names) {
+            select.options[select.options.length] = new Option(response.names[index]);
+        }
+
+        let firstIndividual = response.names[0];
+        populateDemographicInfo(firstIndividual);
+        plotHorizontalBarGraph(firstIndividual);
+        plotBubbleGraph(firstIndividual);
+    });
+}
+
+init();
+
+function getDataByIndividual (individual, topResults) {
+    responseSamples = responseData.samples;
+
+    let individualToDataMap = new Map();
+    // find and set all data for each individual
+    // filter top ten results 
+    for (i=0; i < responseSamples.length; i++) {
+        let sample = responseSamples[i];
+        let sample_otu_ids = [];
+        let sample_otu_labels = [];
+        let sample_values = [];
+
+        // Following code was referenced from https://stackoverflow.com/questions/11499268/sort-two-arrays-the-same-way
+        //1) combine the arrays:
+        var list = [];
+        for (var j = 0; j < sample.otu_ids.length; j++) {
+            list.push({'otu_id': sample.otu_ids[j], 'otu_label': sample.otu_labels[j], 'sample_value': sample.sample_values[j]});
+        }
+        
+        //2) sort:
+        list.sort(function(a, b) {
+            return b.sample_value - a.sample_value;
+        });
+
+        //3) separate them back out but keep top ten values:
+        if(topResults) {
+            for (var k = 0; k < list.length && k < 10; k++) {
+                sample_otu_ids[k] = "OTU " + list[k].otu_id;
+                sample_otu_labels[k] = list[k].otu_label;
+                sample_values[k] = list[k].sample_value;
+            }
+        } else {
+            for (var k = 0; k < list.length; k++) {
+                sample_otu_ids[k] = list[k].otu_id;
+                sample_otu_labels[k] = list[k].otu_label;
+                sample_values[k] = list[k].sample_value;
+            }
+        }
+
+        individualToDataMap.set(sample.id, {otu_ids: sample_otu_ids, otu_labels: sample_otu_labels, sample_values: sample_values})
+    }
+    let check = individualToDataMap.get(individual);
+    console.log("individual",individual)
+    console.log("topResults",topResults)
+    console.log("check",check)
+    return individualToDataMap.get(individual);
+
+}
+
 function populateDemographicInfo(individual) {
     let demoInfo;
     // populate dropdown
@@ -59,72 +130,6 @@ function plotBubbleGraph (individual) {
     
     Plotly.newPlot('bubble', data, layout);
 }
-
-function getDataByIndividual (individual, topResults) {
-    responseSamples = responseData.samples;
-
-    let individualToDataMap = new Map();
-    // find and set all data for each individual
-    // filter top ten results 
-    for (i=0; i < responseSamples.length; i++) {
-        let sample = responseSamples[i];
-        let sample_otu_ids = [];
-        let sample_otu_labels = [];
-        let sample_values = [];
-
-        // Following code was referenced from https://stackoverflow.com/questions/11499268/sort-two-arrays-the-same-way
-        //1) combine the arrays:
-        var list = [];
-        for (var j = 0; j < sample.otu_ids.length; j++) 
-            list.push({'otu_id': sample.otu_ids[j], 'otu_label': sample.otu_labels[j], 'sample_value': sample.sample_values[j]});
-
-        //2) sort:
-        list.sort(function(a, b) {
-            return b.sample_value - a.sample_value;
-        });
-
-        //3) separate them back out but keep top ten values:
-        if(topResults) {
-            for (var k = 0; k < list.length && k < 10; k++) {
-                sample_otu_ids[k] = "OTU " + list[k].otu_id;
-                sample_otu_labels[k] = list[k].otu_label;
-                sample_values[k] = list[k].sample_value;
-            }
-        } else {
-            for (var k = 0; k < list.length; k++) {
-                sample_otu_ids[k] = "" + list[k].otu_id;
-                sample_otu_labels[k] = list[k].otu_label;
-                sample_values[k] = list[k].sample_value;
-            }
-        }
-
-        individualToDataMap.set(sample.id, {otu_ids: sample_otu_ids, otu_labels: sample_otu_labels, sample_values: sample_values})
-    }
-
-    return individualToDataMap.get(individual);
-}
-
-function init () {
-    // https://stackoverflow.com/questions/22325819/d3-js-get-json-from-url
-    d3.json("https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/14-Interactive-Web-Visualizations/02-Homework/samples.json").then(response => {
-        
-        console.log(response);
-        responseData = response;
-
-        // populate dropdown
-        var select = document.getElementById("selDataset");
-        for(index in response.names) {
-            select.options[select.options.length] = new Option(response.names[index]);
-        }
-
-        let firstIndividual = response.names[0];
-        populateDemographicInfo(firstIndividual);
-        plotHorizontalBarGraph(firstIndividual);
-        plotBubbleGraph(firstIndividual);
-    });
-}
-
-init();
 
 // Drop Down Menu Actions
 function getData() 
